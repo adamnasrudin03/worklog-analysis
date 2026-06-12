@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+*.html
+ringkasan.tsv
+*.xlsx
+
+# Export CSV asli dari Jira (sensitif — jangan commit)
+data/export-*.csv
+data/*.csv
+
+# Template contoh di data/templates/ tetap di-commit (tidak kena pola di atas)
+laporan.html

@@ -1,0 +1,33 @@
+[project]
+name = "worklog-analysis"
+version = "1.0.0"
+description = "Analisis work log harian dari export CSV Jira"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "matplotlib>=3.8",
+    "fpdf2>=2.7",
+    "openpyxl>=3.1",
+    "holidays>=0.40",
+]
+
+[project.optional-dependencies]
+pdf-html = ["weasyprint>=62.0; platform_system != 'Darwin'"]
+dev = ["ruff>=0.4"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[project.scripts]
+worklog = "analyze_worklog:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["analyze_worklog", "worklog_lib", "export_report", "export_xlsx", "validation"]
