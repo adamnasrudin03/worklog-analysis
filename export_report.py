@@ -1525,7 +1525,7 @@ def _report_styles() -> str:
       background: var(--bg); color: var(--text); line-height: 1.5;
       transition: background 0.2s ease, color 0.2s ease;
     }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+    .wrap { max-width: min(1440px, calc(100vw - 32px)); margin: 0 auto; padding: 24px 16px 48px; }
     .page-header {
       display: flex; flex-wrap: wrap; align-items: flex-start;
       justify-content: space-between; gap: 16px; margin-bottom: 8px;
