@@ -24,6 +24,68 @@ class ActivityInfo:
     productive: bool | None = None  # None = netral
 
 
+@dataclass(frozen=True)
+class ActivityRefItem:
+    label: str
+    description: str
+
+
+@dataclass(frozen=True)
+class ActivityRefSection:
+    title: str
+    items: tuple[ActivityRefItem, ...]
+
+
+# Referensi tampilan HTML — mengikuti standar Work Log Epic / Ticket / PTD
+ACTIVITY_REFERENCE_SECTIONS: tuple[ActivityRefSection, ...] = (
+    ActivityRefSection(
+        "Work Log Epic",
+        (
+            ActivityRefItem("GROOMING-n", "Grooming session (n-th iteration)"),
+            ActivityRefItem("READ PRD", "Reading Product Requirement Document"),
+            ActivityRefItem("CHECK EXISTING FEATURE", "Reviewing existing features"),
+            ActivityRefItem("CHECK EXISTING CODE", "Reviewing existing codebase"),
+            ActivityRefItem("ANALYSIS DB", "Database analysis"),
+            ActivityRefItem("ANALYSIS API", "API analysis"),
+            ActivityRefItem("ANALYSIS UI & UX", "UI/UX analysis"),
+            ActivityRefItem("ANALYSIS TECHNICAL", "Technical analysis and investigation"),
+            ActivityRefItem("DETAILING", "Detailing requirements or tasks (khusus FE)"),
+            ActivityRefItem("DONE", "Task completed"),
+            ActivityRefItem("MATRIX", "Create Matrix for epic"),
+        ),
+    ),
+    ActivityRefSection(
+        "Work Log Ticket",
+        (
+            ActivityRefItem("DETAILING", "Detailing requirements or tasks (BE dan FE)"),
+            ActivityRefItem("DISCUSSION", "Team discussions"),
+            ActivityRefItem("BLOCKED", "Blocked by an issue"),
+            ActivityRefItem("PAIRING", "Collaborative programming sessions"),
+            ActivityRefItem("CODE REVIEW", "Reviewing code changes"),
+            ActivityRefItem("DONE", "Task completed"),
+        ),
+    ),
+    ActivityRefSection(
+        "Additional Task (PTD)",
+        (
+            ActivityRefItem("DISCUSSION", "Team discussions"),
+            ActivityRefItem("PROJECT SA", "SA Project"),
+            ActivityRefItem("REVISIT", "Revisit Ticket"),
+            ActivityRefItem("ISSUE", "Resolve Issue"),
+            ActivityRefItem("MEETING", "Meeting"),
+            ActivityRefItem(
+                "ON LEAVE",
+                "On Leave / Sick Leave / Holiday Nationals",
+            ),
+            ActivityRefItem(
+                "OTHERS",
+                "Interview, workshop, LP ultah, farewell, etc. (non-productive)",
+            ),
+        ),
+    ),
+)
+
+
 def _info(
     key: str,
     description: str,
@@ -39,7 +101,7 @@ def _info(
 ACTIVITY_CATALOG: dict[str, ActivityInfo] = {
     "GROOMING": _info(
         "GROOMING",
-        "Grooming session (iterasi grooming)",
+        "Grooming session (n-th iteration)",
         "collaboration",
         "Kolaborasi",
         productive=True,
@@ -95,14 +157,14 @@ ACTIVITY_CATALOG: dict[str, ActivityInfo] = {
     ),
     "MATRIX": _info(
         "MATRIX",
-        "Create matrix for epic",
+        "Create Matrix for epic",
         "analysis",
         "Analisis",
         productive=True,
     ),
     "DETAILING": _info(
         "DETAILING",
-        "Detailing requirements or tasks (BE/FE)",
+        "Detailing requirements or tasks (BE dan FE)",
         "detailing",
         "Detailing",
         productive=True,
@@ -151,7 +213,7 @@ ACTIVITY_CATALOG: dict[str, ActivityInfo] = {
     ),
     "REVISIT": _info(
         "REVISIT",
-        "Revisit ticket",
+        "Revisit Ticket",
         "review",
         "Review",
         productive=True,
@@ -165,14 +227,14 @@ ACTIVITY_CATALOG: dict[str, ActivityInfo] = {
     ),
     "PROJECT SA": _info(
         "PROJECT SA",
-        "SA project",
+        "SA Project",
         "support",
         "Support",
         productive=True,
     ),
     "ISSUE": _info(
         "ISSUE",
-        "Resolve issue",
+        "Resolve Issue",
         "support",
         "Support",
         productive=True,
@@ -186,14 +248,14 @@ ACTIVITY_CATALOG: dict[str, ActivityInfo] = {
     ),
     "ON LEAVE": _info(
         "ON LEAVE",
-        "On leave / sick leave / libur nasional",
+        "On Leave / Sick Leave / Holiday Nationals",
         "admin",
         "Non-produktif",
         productive=False,
     ),
     "OTHERS": _info(
         "OTHERS",
-        "Interview, workshop, LP ultah, farewell, dll. (non-produktif)",
+        "Interview, workshop, LP ultah, farewell, etc. (non-productive)",
         "admin",
         "Non-produktif",
         productive=False,
@@ -253,3 +315,8 @@ def activity_catalog_for_export() -> dict[str, dict[str, str]]:
             "categoryLabel": info.category_label,
         }
     return out
+
+
+def activity_reference_sections() -> tuple[ActivityRefSection, ...]:
+    """Bagian referensi activity untuk laporan HTML."""
+    return ACTIVITY_REFERENCE_SECTIONS

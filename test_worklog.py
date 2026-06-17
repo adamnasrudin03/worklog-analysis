@@ -122,7 +122,11 @@ class TestWorklogLib(unittest.TestCase):
         self.assertNotIn("\t", tsv_summary_only)
 
     def test_activity_kind(self):
-        from activity_reference import canonical_activity_kind, lookup_activity_info
+        from activity_reference import (
+            activity_reference_sections,
+            canonical_activity_kind,
+            lookup_activity_info,
+        )
         from worklog_lib import activity_kind_from_entry, activity_kind_from_raw, load_entries
 
         self.assertEqual(canonical_activity_kind("GROOMING-2"), "GROOMING")
@@ -135,6 +139,11 @@ class TestWorklogLib(unittest.TestCase):
         info = lookup_activity_info("CHECK EXISTING FEATURE")
         self.assertIsNotNone(info)
         self.assertIn("features", info.description.lower())
+        sections = activity_reference_sections()
+        self.assertEqual(sections[0].title, "Work Log Epic")
+        self.assertEqual(sections[1].title, "Work Log Ticket")
+        self.assertEqual(sections[2].title, "Additional Task (PTD)")
+        self.assertEqual(sections[0].items[0].label, "GROOMING-n")
         entries = load_entries(CSV_WORKLOG)
         kinds = {activity_kind_from_entry(e) for e in entries}
         self.assertIn("CODING", kinds)
@@ -306,6 +315,12 @@ class TestExport(unittest.TestCase):
         self.assertIn("worklog-theme", html_out)
         self.assertIn("activity-ref-grid", html_out)
         self.assertIn("Referensi Jenis Activity", html_out)
+        self.assertIn("Work Log Epic", html_out)
+        self.assertIn("Work Log Ticket", html_out)
+        self.assertIn("Additional Task (PTD)", html_out)
+        self.assertIn("GROOMING-n", html_out)
+        self.assertIn("activityInfoPopover", html_out)
+        self.assertIn("data-activity-info-btn", html_out)
         self.assertIn("activityCategoryBody", html_out)
         self.assertIn("Lihat", html_out)
         self.assertIn('filterNames', html_out)

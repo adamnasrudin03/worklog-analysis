@@ -9,7 +9,7 @@ import json
 import re
 from pathlib import Path
 
-from activity_reference import ACTIVITY_CATALOG, CATEGORY_ORDER, activity_catalog_for_export
+from activity_reference import activity_catalog_for_export, activity_reference_sections
 from worklog_lib import (
     ReportData,
     TicketWorkSummary,
@@ -162,34 +162,36 @@ def _activity_table_rows_html(by_activity: dict[str, float]) -> str:
     return "".join(rows)
 
 
+def _activity_info_btn_html() -> str:
+    return (
+        '<button type="button" class="info-btn no-print" data-activity-info-btn '
+        'aria-label="Info jenis activity" aria-expanded="false" '
+        'title="Referensi jenis activity">'
+        '<span aria-hidden="true">ⓘ</span></button>'
+    )
+
+
+def _activity_info_popover_html() -> str:
+    return (
+        '<div id="activityInfoPopover" class="activity-info-popover no-print" '
+        'role="dialog" aria-label="Referensi jenis activity" hidden>'
+        f"{_activity_reference_html()}"
+        "</div>"
+    )
+
+
 def _activity_reference_html() -> str:
-    by_category: dict[str, list] = {cat: [] for cat in CATEGORY_ORDER}
-    for info in ACTIVITY_CATALOG.values():
-        by_category.setdefault(info.category, []).append(info)
     blocks: list[str] = []
-    category_titles = {
-        "analysis": "Analisis",
-        "detailing": "Detailing",
-        "development": "Development",
-        "collaboration": "Kolaborasi",
-        "review": "Review",
-        "support": "Support",
-        "blocked": "Blocked",
-        "done": "Selesai",
-        "admin": "Non-produktif",
-    }
-    for cat in CATEGORY_ORDER:
-        items = sorted(by_category.get(cat, []), key=lambda i: i.key)
-        if not items:
-            continue
+    for section in activity_reference_sections():
         lis = "".join(
             "<li><strong>"
-            f"{html.escape(format_activity_display(info.key))}</strong>"
-            f" — {html.escape(info.description)}</li>"
-            for info in items
+            f"{html.escape(item.label)}</strong>"
+            f" — {html.escape(item.description)}</li>"
+            for item in section.items
         )
-        title = category_titles.get(cat, cat.title())
-        blocks.append(f"<div class='ref-block'><h3>{html.escape(title)}</h3><ul>{lis}</ul></div>")
+        blocks.append(
+            f"<div class='ref-block'><h3>{html.escape(section.title)}</h3><ul>{lis}</ul></div>"
+        )
     return "".join(blocks)
 
 
@@ -478,6 +480,7 @@ def _report_nav_html() -> str:
     return """
     <nav class="report-nav no-print" aria-label="Navigasi laporan">
       <a href="#section-kpi">KPI</a>
+      <a href="#section-activity-ref">Referensi</a>
       <a href="#section-summary">Ringkasan</a>
       <a href="#section-team">Tim</a>
       <a href="#section-charts">Chart</a>
@@ -1010,6 +1013,70 @@ def _interactive_filter_script() -> str:
       return { legend: { display: showLegend, labels: { color: t.legend } } };
     }
 
+    function initActivityInfoPopover() {
+      const popover = document.getElementById('activityInfoPopover');
+      if (!popover) return;
+      let activeBtn = null;
+
+      function closePopover() {
+        if (popover.hidden) return;
+        popover.hidden = true;
+        if (activeBtn) {
+          activeBtn.setAttribute('aria-expanded', 'false');
+          activeBtn = null;
+        }
+      }
+
+      function positionPopover(btn) {
+        const rect = btn.getBoundingClientRect();
+        const margin = 8;
+        popover.hidden = false;
+        const popW = popover.offsetWidth;
+        const popH = popover.offsetHeight;
+        let left = rect.left + rect.width / 2 - popW / 2;
+        let top = rect.bottom + margin;
+        left = Math.max(margin, Math.min(left, window.innerWidth - popW - margin));
+        if (top + popH > window.innerHeight - margin) {
+          top = Math.max(margin, rect.top - popH - margin);
+        }
+        popover.style.left = left + 'px';
+        popover.style.top = top + 'px';
+      }
+
+      document.querySelectorAll('[data-activity-info-btn]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!popover.hidden && activeBtn === btn) {
+            closePopover();
+            return;
+          }
+          if (activeBtn && activeBtn !== btn) {
+            activeBtn.setAttribute('aria-expanded', 'false');
+          }
+          activeBtn = btn;
+          btn.setAttribute('aria-expanded', 'true');
+          positionPopover(btn);
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (popover.hidden) return;
+        if (popover.contains(e.target)) return;
+        if (e.target.closest('[data-activity-info-btn]')) return;
+        closePopover();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePopover();
+      });
+      window.addEventListener('resize', () => {
+        if (!popover.hidden && activeBtn) positionPopover(activeBtn);
+      });
+      window.addEventListener('scroll', () => {
+        if (!popover.hidden && activeBtn) positionPopover(activeBtn);
+      }, { passive: true });
+    }
+
     function initThemeToggle() {
       const btn = document.getElementById('themeToggle');
       if (!btn) return;
@@ -1471,6 +1538,7 @@ def _interactive_filter_script() -> str:
       }
 
       initThemeToggle();
+      initActivityInfoPopover();
 
       const filterSection = document.getElementById('section-filter');
       if (filterSection) {
@@ -1549,6 +1617,75 @@ def _report_styles() -> str:
       transition: background 0.2s ease, border-color 0.2s ease;
     }
     .card h2 { font-size: 1rem; margin: 0 0 12px; }
+    .card-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .card-heading h2 { margin: 0; flex: 1 1 auto; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .title-row h1 { margin: 0; }
+    .info-btn {
+      border: 1px solid var(--border);
+      background: var(--surface-muted);
+      color: var(--muted);
+      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .info-btn:hover,
+    .info-btn[aria-expanded="true"] {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface-muted));
+    }
+    .activity-info-popover {
+      position: fixed;
+      z-index: 1000;
+      width: min(520px, calc(100vw - 32px));
+      max-height: min(70vh, 640px);
+      overflow-y: auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 16px 48px var(--shadow);
+    }
+    .activity-info-popover[hidden] { display: none; }
+    .activity-info-popover .activity-ref-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .summary-with-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+    }
+    .summary-with-info::-webkit-details-marker { display: none; }
+    .summary-with-info::before {
+      content: '▸ ';
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .section-collapse[open] > summary.summary-with-info::before {
+      content: '▾ ';
+    }
+    .summary-with-info .summary-title { flex: 1 1 auto; }
+    .summary-with-info .info-btn { margin-left: auto; }
     .kpi { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
     .kpi small { font-size: 0.85rem; font-weight: 400; color: var(--muted); display: block; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: 1px solid var(--border); }
@@ -2066,7 +2203,10 @@ def render_html(report: ReportData) -> str:
   <div class="wrap">
     <div class="page-header">
       <div>
-        <h1>Work Log Analysis</h1>
+        <div class="title-row">
+          <h1>Work Log Analysis</h1>
+          {_activity_info_btn_html()}
+        </div>
         <p class="subtitle">{html.escape(report.period_label)} · {html.escape(", ".join(report.names))}{html.escape(workdays_note)}</p>
       </div>
       <button type="button" id="themeToggle" class="theme-toggle no-print" aria-label="Toggle dark mode">🌙 Dark mode</button>
@@ -2097,8 +2237,20 @@ def render_html(report: ReportData) -> str:
       </div>
     </div>
 
+    <details id="section-activity-ref" class="card section-collapse" open style="margin-bottom:16px">
+      <summary class="summary-with-info">
+        <span class="summary-title">Referensi Jenis Activity</span>
+        {_activity_info_btn_html()}
+      </summary>
+      <p class="muted copy-hint">Standar label activity tim — dipakai untuk mengklasifikasi dan menampilkan tooltip di laporan.</p>
+      <div class="activity-ref-grid">{_activity_reference_html()}</div>
+    </details>
+
     <details id="section-summary" class="card section-collapse" open style="margin-bottom:16px">
-      <summary>Ringkasan per Hari &amp; Excel</summary>
+      <summary class="summary-with-info">
+        <span class="summary-title">Ringkasan per Hari &amp; Excel</span>
+        {_activity_info_btn_html()}
+      </summary>
       <p class="muted copy-hint">Grouping ascending, ringkasan kerja tanpa jam — siap paste ke Excel.</p>
       <div class="table-scroll">
         <table class="summary-table">
@@ -2156,8 +2308,11 @@ def render_html(report: ReportData) -> str:
           {_chart_img(grouping_b64, "Grouping activity")}
         </div>
         <div class="card">
-          <h2>Activity</h2>
-          <p class="muted copy-hint">Hover label untuk penjelasan activity. Lihat referensi lengkap di bawah.</p>
+          <div class="card-heading">
+            <h2>Activity</h2>
+            {_activity_info_btn_html()}
+          </div>
+          <p class="muted copy-hint">Klik ⓘ untuk referensi lengkap. Hover label untuk penjelasan singkat.</p>
           <canvas id="activityChart"></canvas>
           {_chart_img(activity_b64, "Activity")}
           <table style="margin-top:12px">
@@ -2171,11 +2326,6 @@ def render_html(report: ReportData) -> str:
           </table>
         </div>
       </div>
-      <details id="section-activity-ref" class="card section-collapse" style="margin-bottom:16px">
-        <summary>Referensi Jenis Activity</summary>
-        <p class="muted copy-hint">Standar label activity tim — dipakai untuk mengklasifikasi dan menampilkan tooltip di laporan.</p>
-        <div class="activity-ref-grid">{_activity_reference_html()}</div>
-      </details>
       {sp_layer_section_html}
       <div class="card" style="margin-bottom:16px">
         <h2>Top Tiket</h2>
@@ -2221,6 +2371,8 @@ def render_html(report: ReportData) -> str:
       </table>
     </div>
   </div>
+
+  {_activity_info_popover_html()}
 
   <script id="filterData" type="application/json">{filter_data}</script>
   <script>
