@@ -12,6 +12,7 @@ ACTIVITY_ALIASES: dict[str, str] = {
     "REVISI": "REVISIT",
     "MEETING": "MEETING",
     "ON LEAVE": "ON LEAVE",
+    "CHANGE REQUEST": "CHANGE-REQUEST",
 }
 
 
@@ -62,6 +63,11 @@ ACTIVITY_REFERENCE_SECTIONS: tuple[ActivityRefSection, ...] = (
             ActivityRefItem("BLOCKED", "Blocked by an issue"),
             ActivityRefItem("PAIRING", "Collaborative programming sessions"),
             ActivityRefItem("CODE REVIEW", "Reviewing code changes"),
+            ActivityRefItem(
+                "CHANGE-REQUEST",
+                "Ada penambahan/perubahan requirement atau design pada tiket terdampak "
+                "(bisa sebelum atau sesudah [DONE])",
+            ),
             ActivityRefItem("DONE", "Task completed"),
         ),
     ),
@@ -202,6 +208,14 @@ ACTIVITY_CATALOG: dict[str, ActivityInfo] = {
         "Reviewing code changes",
         "review",
         "Review",
+        productive=True,
+    ),
+    "CHANGE-REQUEST": _info(
+        "CHANGE-REQUEST",
+        "Ada penambahan/perubahan requirement atau design pada tiket terdampak "
+        "(bisa sebelum atau sesudah [DONE])",
+        "support",
+        "Support",
         productive=True,
     ),
     "REVIEW": _info(

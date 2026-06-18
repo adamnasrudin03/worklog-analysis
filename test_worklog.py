@@ -131,6 +131,7 @@ class TestWorklogLib(unittest.TestCase):
 
         self.assertEqual(canonical_activity_kind("GROOMING-2"), "GROOMING")
         self.assertEqual(canonical_activity_kind("REVISI"), "REVISIT")
+        self.assertEqual(canonical_activity_kind("CHANGE REQUEST"), "CHANGE-REQUEST")
         self.assertEqual(
             activity_kind_from_raw("[CODING] feat foo"),
             "CODING",
@@ -319,6 +320,7 @@ class TestExport(unittest.TestCase):
         self.assertIn("Work Log Ticket", html_out)
         self.assertIn("Additional Task (PTD)", html_out)
         self.assertIn("GROOMING-n", html_out)
+        self.assertIn("CHANGE-REQUEST", html_out)
         self.assertIn("activityInfoPopover", html_out)
         self.assertIn("data-activity-info-btn", html_out)
         self.assertIn("activityCategoryBody", html_out)
